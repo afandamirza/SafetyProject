@@ -1,11 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/rendering.dart';
 import 'package:logging/logging.dart';
+import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:safetyreport/page/detail_page.dart';
+
+import 'package:geolocator/geolocator.dart';
+
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -16,7 +24,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? image, location, detectionStatus;
-  // File? _imageFile;
+  File? _imageFile;
   DateTimeRange? _selectedDateRange;
   bool _isDescending = false;
   bool _isGridView = false;
@@ -66,95 +74,100 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // // Pick image from gallery
-  // Future<void> pickImage() async {
-  //   final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  // Pick image from gallery
+  Future<void> pickImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-  //   setState(() {
-  //     if (pickedFile != null) {
-  //       _imageFile = File(pickedFile.path);
-  //     } else {
-  //       log.info('No item selected.');
-  //     }
-  //   });
-  // }
+    setState(() {
+      if (pickedFile != null) {
+        _imageFile = File(pickedFile.path);
+      } else {
+        log.info('No item selected.');
+      }
+    });
+  }
 
-  // // Compress image
-  // Future<File?> compressImage(File file) async {
-  //   final bytes = file.readAsBytesSync();
-  //   final img.Image? image = img.decodeImage(bytes);
+  // Compress image
+  Future<File?> compressImage(File file) async {
+    final bytes = file.readAsBytesSync();
+    final img.Image? image = img.decodeImage(bytes);
 
-  //   if (image == null) {
-  //     log.warning('Unable to decode image.');
-  //     return null;
-  //   }
+    if (image == null) {
+      log.warning('Unable to decode image.');
+      return null;
+    }
 
-  //   int width;
-  //   int height;
+    int width;
+    int height;
 
-  //   if (image.width > image.height) {
-  //     width = 1000;
-  //     height = (image.height / image.width * 1000).round();
-  //   } else {
-  //     height = 1000;
-  //     width = (image.width / image.height * 1000).round();
-  //   }
+    if (image.width > image.height) {
+      width = 1000;
+      height = (image.height / image.width * 1000).round();
+    } else {
+      height = 1000;
+      width = (image.width / image.height * 1000).round();
+    }
 
-  //   img.Image resizedImage =
-  //       img.copyResize(image, width: width, height: height);
+    img.Image resizedImage =
+        img.copyResize(image, width: width, height: height);
 
-  //   final compressedBytes = img.encodeJpg(resizedImage, quality: 100);
+    final compressedBytes = img.encodeJpg(resizedImage, quality: 100);
 
-  //   // Save compressed image to temporary file
-  //   final tempDir = Directory.systemTemp;
-  //   final tempFile = File('${tempDir.path}/temp_image.jpg');
-  //   tempFile.writeAsBytesSync(compressedBytes);
+    // Save compressed image to temporary file
+    final tempDir = Directory.systemTemp;
+    final tempFile = File('${tempDir.path}/temp_image.jpg');
+    tempFile.writeAsBytesSync(compressedBytes);
 
-  //   return tempFile;
-  // }
+    return tempFile;
+  }
 
-  // // Upload image to Firebase Storage and get URL
-  // Future<void> uploadImage() async {
-  //   if (_imageFile == null) return;
+  // Upload image to Firebase Storage and get URL
+  Future<void> uploadImage() async {
+    if (_imageFile == null) return;
 
-  //   final compressedFile = await compressImage(_imageFile!);
-  //   if (compressedFile == null) return;
+    final compressedFile = await compressImage(_imageFile!);
+    if (compressedFile == null) return;
 
-  //   final originalFileName = _imageFile!.path.split('/').last;
-  //   final destination = 'images/$originalFileName';
+    final originalFileName = _imageFile!.path.split('/').last;
+    final destination = 'images/$originalFileName';
 
-  //   try {
-  //     final ref = FirebaseStorage.instance.ref(destination);
-  //     await ref.putFile(compressedFile);
-  //     String imageUrl = await ref.getDownloadURL();
+    try {
+      final ref = FirebaseStorage.instance.ref(destination);
+      await ref.putFile(compressedFile);
+      String imageUrl = await ref.getDownloadURL();
 
-  //     setState(() {
-  //       image = imageUrl;
-  //     });
+      setState(() {
+        image = imageUrl;
+      });
 
-  //     log.info('Image uploaded: $imageUrl');
-  //   } catch (e) {
-  //     log.severe('Error occurred while uploading image: $e');
-  //   }
-  // }
+      log.info('Image uploaded: $imageUrl');
+    } catch (e) {
+      log.severe('Error occurred while uploading image: $e');
+    }
+  }
 
-  // //Create dan submit data
-  // Future<void> createData() async {
-  //   await uploadImage();
+  //Create dan submit data
+  Future<void> createData() async {
+    // await uploadImage();
 
-  //   DocumentReference documentReference = db.collection("SafetyReport").doc();
+    debugPrint("yoaimo");
+    Position position = await Geolocator.getCurrentPosition();
+    debugPrint("HALOOOOOOOOOOO");
+    debugPrint(position.toString());
 
-  //   Map<String, dynamic> mapData = {
-  //     "Image": image,
-  //     "Location": location,
-  //     "Safety Report": detectionStatus,
-  //     "Time stamp": Timestamp.now()
-  //   };
+    DocumentReference documentReference = db.collection("SafetyReport").doc();
 
-  //   documentReference.set(mapData).whenComplete(() {
-  //     log.finer("Document created with ID: ${documentReference.id}");
-  //   });
-  // }
+    Map<String, dynamic> mapData = {
+      "Image": image,
+      "Location": location,
+      "Safety Report": detectionStatus,
+      "Time stamp": Timestamp.now()
+    };
+
+    documentReference.set(mapData).whenComplete(() {
+      log.finer("Document created with ID: ${documentReference.id}");
+    });
+  }
 
   // Show date range picker and set state for date range
   Future<void> _selectDateRange(BuildContext context) async {
@@ -441,93 +454,90 @@ PR
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  // // Create Data Insert Image
+                  // Create Data Insert Image
 
-                  // _imageFile == null
-                  //     ? const Text('No image selected.')
-                  //     : Image.file(_imageFile!,
-                  //         height: 300, width: 300, fit: BoxFit.cover),
-                  // const SizedBox(
-                  //   height: 24,
-                  // ),
-                  // ElevatedButton(
-                  //   onPressed: pickImage,
-                  //   child: const Text('Pick Image'),
-                  // ),
+                  _imageFile == null
+                      ? const Text('No image selected.')
+                      : Image.file(_imageFile!,
+                          height: 300, width: 300, fit: BoxFit.cover),
+                  const SizedBox(
+                    height: 24,
+                  ),
+                  ElevatedButton(
+                    onPressed: pickImage,
+                    child: const Text('Pick Image'),
+                  ),
 
-                  // //Input Form
+                  //Input Form
 
-                  // Padding(
-                  //   padding: const EdgeInsets.all(8),
-                  //   child: TextFormField(
-                  //     decoration: const InputDecoration(
-                  //         labelText: "Location",
-                  //         fillColor: Colors.white,
-                  //         focusedBorder: OutlineInputBorder(
-                  //           borderSide:
-                  //               BorderSide(color: Colors.blue, width: 2.0),
-                  //         )),
-                  //     onChanged: (String location) {
-                  //       getLocation(location);
-                  //     },
-                  //   ),
-                  // ),
-                  // Padding(
-                  //   padding: const EdgeInsets.all(8),
-                  //   child: DropdownButtonFormField<String>(
-                  //     decoration: const InputDecoration(
-                  //       labelText: "Detection Status",
-                  //       fillColor: Colors.white,
-                  //       focusedBorder: OutlineInputBorder(
-                  //         borderSide:
-                  //             BorderSide(color: Colors.blue, width: 2.0),
-                  //       ),
-                  //     ),
-                  //     items: const [
-                  //       DropdownMenuItem(
-                  //           value: "No Googles", child: Text("No Googles")),
-                  //       DropdownMenuItem(
-                  //           value: "No Coat", child: Text("No Coat")),
-                  //       DropdownMenuItem(
-                  //           value: "No Helmet", child: Text("No Helmet")),
-                  //       DropdownMenuItem(
-                  //           value: "No Boots", child: Text("No Boots")),
-                  //     ],
-                  //     onChanged: (String? status) {
-                  //       setState(() {
-                  //         getDetectionStatus(status!);
-                  //       });
-                  //     },
-                  //   ),
-                  // ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: TextFormField(
+                      decoration: const InputDecoration(
+                          labelText: "Location",
+                          fillColor: Colors.white,
+                          focusedBorder: OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Colors.blue, width: 2.0),
+                          )),
+                      onChanged: (String location) {
+                        getLocation(location);
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: "Detection Status",
+                        fillColor: Colors.white,
+                        focusedBorder: OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Colors.blue, width: 2.0),
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                            value: "No Googles", child: Text("No Googles")),
+                        DropdownMenuItem(
+                            value: "No Coat", child: Text("No Coat")),
+                        DropdownMenuItem(
+                            value: "No Helmet", child: Text("No Helmet")),
+                        DropdownMenuItem(
+                            value: "No Boots", child: Text("No Boots")),
+                      ],
+                      onChanged: (String? status) {
+                        setState(() {
+                          getDetectionStatus(status!);
+                        });
+                      },
+                    ),
+                  ),
 
-                  // // Create Data Insert Image
+                  // Create Data Insert Image
 
-                  // Padding(
-                  //   padding: const EdgeInsets.all(8),
-                  //   child: Wrap(
-                  //     spacing: 10,
-                  //     children: <Widget>[
-                  //       ElevatedButton(
-                  //         style: ElevatedButton.styleFrom(
-                  //           padding: const EdgeInsets.symmetric(
-                  //               horizontal: 40, vertical: 2),
-                  //           foregroundColor: Colors.green,
-                  //         ),
-                  //         child: const Text(
-                  //           'Create',
-                  //           textAlign: TextAlign.center,
-                  //         ),
-                  //         onPressed: () {
-                  //           createData();
-                  //         },
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
-
-                  // //
-
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Wrap(
+                      spacing: 10,
+                      children: <Widget>[
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 2),
+                            foregroundColor: Colors.green,
+                          ),
+                          child: const Text(
+                            'Create',
+                            textAlign: TextAlign.center,
+                          ),
+                          onPressed: () {
+                            createData();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(
                     height: 24,
                   ),
