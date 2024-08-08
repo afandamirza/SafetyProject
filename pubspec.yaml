@@ -53,6 +53,7 @@ dependencies:
   logging: ^1.2.0
   share_plus: ^10.0.0
   dio: ^5.5.0+1
+  geolocator: ^12.0.0
 
 dev_dependencies:
   flutter_test:
