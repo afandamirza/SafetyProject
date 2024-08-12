@@ -4,7 +4,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:safetyreport/not_found_page.dart';
 import 'package:safetyreport/page/detail_page.dart';
 import 'package:safetyreport/page/home_page.dart';
+import 'package:safetyreport/page/login_page.dart';
 import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 void main() async {
   //Inisialisasi agar flutter bisa tersambung ke firebase
@@ -28,11 +31,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      initialRoute: '/home',
+      initialRoute: '/login',
       onGenerateRoute: (settings) {
         if (settings.name!.startsWith('/SafetyReport/')) {
           final id = settings.name!.split('/').last;
-          debugPrint("ini idnya sama degnan : ");
+          debugPrint("ini idnya sama dengan : ");
           debugPrint(id);
           return MaterialPageRoute(
             builder: (context) => FutureBuilder<DocumentSnapshot>(
@@ -64,6 +67,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/home': (context) => const MyHomePage(),
         '/testnotfound': (context) => const NotFoundPage(),
+        '/login': (context) => const LoginPage(),
       },
     );
   }
