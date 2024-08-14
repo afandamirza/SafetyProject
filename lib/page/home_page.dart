@@ -1,7 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/rendering.dart';
 import 'package:logging/logging.dart';
@@ -223,14 +223,14 @@ PR
 
 */
   void navigateToDetailPage(DocumentSnapshot documentSnapshot) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DetailPage(documentSnapshot: documentSnapshot),
-      ),
-    );
-
-    // Navigator.pushNamed(context, '/SafetyReport/${documentSnapshot.id}');
+    // Navigator.pushReplacementNamed(context, '/SafetyReport/${documentSnapshot.id}');
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => DetailPage(documentSnapshot: documentSnapshot),
+    //   ),
+    // );
+    Navigator.pushNamed(context, '/SafetyReport/${documentSnapshot.id}');
   }
 
   Widget _buildInkWellListItem(DocumentSnapshot documentSnapshot) {
@@ -581,6 +581,34 @@ PR
                       ),
                     ),
                   ],
+
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Wrap(
+                      spacing: 10,
+                      children: <Widget>[
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 2),
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text(
+                            'Logout',
+                            textAlign: TextAlign.center,
+                          ),
+                          onPressed: () {
+                            FirebaseAuth.instance.signOut();
+                            Navigator.pushNamedAndRemoveUntil(context, "/login", (route) => false);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 24,
+                  ),
 
                   //
 
