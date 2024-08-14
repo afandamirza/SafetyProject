@@ -223,14 +223,14 @@ PR
 
 */
   void navigateToDetailPage(DocumentSnapshot documentSnapshot) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DetailPage(documentSnapshot: documentSnapshot),
-      ),
-    );
-
-    // Navigator.pushNamed(context, '/SafetyReport/${documentSnapshot.id}');
+    // Navigator.pushReplacementNamed(context, '/SafetyReport/${documentSnapshot.id}');
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => DetailPage(documentSnapshot: documentSnapshot),
+    //   ),
+    // );
+    Navigator.pushNamed(context, '/SafetyReport/${documentSnapshot.id}');
   }
 
   Widget _buildInkWellListItem(DocumentSnapshot documentSnapshot) {

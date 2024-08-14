@@ -36,31 +36,36 @@ class MyApp extends StatelessWidget {
       // debugPrint(FirebaseAuth.instance.currentUser);
       initialRoute: FirebaseAuth.instance.currentUser == null ? '/login' : '/home',
 
-      // onGenerateRoute: (settings) {
-      //   if (settings.name!.startsWith('/SafetyReport/')) {
-      //     final id = settings.name!.split('/').last;
-      //     return MaterialPageRoute(
-      //       builder: (context) => FutureBuilder<DocumentSnapshot>(
-      //         future: FirebaseFirestore.instance.collection('SafetyReport').doc(id).get(),
-      //         builder: (context, snapshot) {
-      //           if (snapshot.connectionState == ConnectionState.waiting) {
-      //             return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      //           }
-      //           if (snapshot.hasError) {
-      //             return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
-      //           }
-      //           if (!snapshot.hasData || !snapshot.data!.exists) {
-      //             return const Scaffold(body: Center(child: Text('Document not found')));
-      //           }
-      //           return DetailPage(documentSnapshot: snapshot.data!);
-      //         },
-      //       ),
-      //       settings: settings,
-      //     );
-      //   }
-      //   // Handle other routes if needed
-      //   return null;
-      // },
+      onGenerateRoute: (settings) {
+        if (settings.name!.startsWith('/SafetyReport/')) {
+          final id = settings.name!.split('/').last;
+          if(FirebaseAuth.instance.currentUser == null){
+            return MaterialPageRoute(builder: (context) => LoginPage());
+          }
+
+          return MaterialPageRoute(
+            builder: (context) => FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('SafetyReport').doc(id).get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                }
+                if (snapshot.hasError) {
+                  return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
+                }
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const Scaffold(body: Center(child: Text('Document not found')));
+                }
+                return DetailPage(documentSnapshot: snapshot.data!);
+              },
+            ),
+            settings: settings,
+          );
+        }
+        // Handle other routes if needed
+        return null;
+      },
+
       routes: {
         '/home': (context) => AuthGuard(child: MyHomePage()),
         '/testnotfound': (context) => const NotFoundPage(),
