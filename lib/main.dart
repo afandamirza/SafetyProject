@@ -9,6 +9,7 @@ import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:safetyreport/widget/auth_guard.dart';
 import 'package:safetyreport/widget/login_check.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
   //Inisialisasi agar flutter bisa tersambung ke firebase
@@ -17,6 +18,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   //
+  usePathUrlStrategy();
   runApp(const MyApp());
 }
 
@@ -39,8 +41,10 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         if (settings.name!.startsWith('/SafetyReport/')) {
           final id = settings.name!.split('/').last;
+          final originalUrl = settings.name.toString();
+          
           if(FirebaseAuth.instance.currentUser == null){
-            return MaterialPageRoute(builder: (context) => LoginPage());
+            return MaterialPageRoute(builder: (context) => LoginPage(redirectUrl: originalUrl));
           }
 
           return MaterialPageRoute(

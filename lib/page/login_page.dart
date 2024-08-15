@@ -4,7 +4,9 @@ import 'package:safetyreport/user_auth/firebase_auth_service.dart';
 import 'package:safetyreport/widget/form_container_widget.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  final String? redirectUrl;
+
+  const LoginPage({Key? key, this.redirectUrl}) : super(key: key);
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -93,6 +95,9 @@ class _LoginPageState extends State<LoginPage> {
     if (user != null){
       print("User successfully sign in");
       Navigator.pushReplacementNamed(context, "/home");
+      if (widget.redirectUrl != null) {
+        Navigator.pushNamed(context, widget.redirectUrl!);
+      }
     } else {
       print("User failed to sign in");
     }
