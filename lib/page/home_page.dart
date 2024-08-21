@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:dynamic_height_grid_view/dynamic_height_grid_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,7 +9,14 @@ import 'package:logging/logging.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:safetyreport/components/my_grid_inkwell.dart';
+import 'package:safetyreport/components/my_list_inkwell.dart';
+import 'package:safetyreport/firebase_options.dart';
 import 'package:safetyreport/page/detail_page.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:io';
+import 'package:image/image.dart' as img;
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -16,11 +27,17 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? image, location, detectionStatus;
-  // File? _imageFile;
+  File? _imageFile;
   DateTimeRange? _selectedDateRange;
   bool _isDescending = false;
   bool _isGridView = false;
   String searchQuery = '';
+
+  bool isSameDate(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -46,6 +63,105 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  void setupFirebaseMessaging() async {
+    final FirebaseMessaging messaging = FirebaseMessaging.instance;
+    await FirebaseMessaging.instance.subscribeToTopic("report");
+
+    // Request permissions
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    print('User granted permission: ${settings.authorizationStatus}');
+
+    // Determine platform and execute relevant setup
+    if (kIsWeb) {
+      // Setup for web
+      const String vapidKey =
+          "BGW04XbUXEZ6CfDXwTAPXn2XPhuNFSELmh5WqC1bccO4Kf0uU0Z2prX4mTvtjPej-64wOv8vlrKALskmjPZ0tPs";
+
+      String? token;
+      try {
+        token = await messaging.getToken(vapidKey: vapidKey);
+        print('FCM token (Web): $token');
+      } catch (e) {
+        print('Error fetching token on web: $e');
+      }
+    } else if (Platform.isAndroid || Platform.isIOS) {
+      // Setup for Android or iOS
+      String? token;
+      try {
+        token = await messaging.getToken();
+        await messaging.subscribeToTopic("report");
+        print('FCM token (Mobile): $token');
+      } catch (e) {
+        print('Error fetching token on mobile: $e');
+      }
+    } else {
+      print('Unsupported platform for Firebase Messaging');
+    }
+
+    // Subscribe to topic
+    print('Subscribed to topic "report"');
+  }
+
+  void setupPushNotification() async {
+    final fcm = FirebaseMessaging.instance;
+    await fcm.requestPermission();
+
+    final token = await fcm.getToken();
+    await fcm.subscribeToTopic("report");
+    print('FCM device token : ${token}');
+  }
+
+  void setupVapidKey() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    print('User granted permission: ${settings.authorizationStatus}');
+
+    // TODO: replace with your own VAPID key
+    const vapidKey =
+        "BGW04XbUXEZ6CfDXwTAPXn2XPhuNFSELmh5WqC1bccO4Kf0uU0Z2prX4mTvtjPej-64wOv8vlrKALskmjPZ0tPs";
+
+    // use the registration token to send messages to users from your trusted server environment
+    String? token;
+
+    try {
+      if (DefaultFirebaseOptions.currentPlatform ==
+          DefaultFirebaseOptions.web) {
+        token = await messaging.getToken(vapidKey: vapidKey);
+      } else {
+        token = await messaging.getToken();
+        print(token);
+      }
+
+      if (kDebugMode) {
+        print('Registration Token=$token');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching token: $e');
+        print(token);
+      }
+    }
+    await messaging.subscribeToTopic('report');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +171,22 @@ class _MyHomePageState extends State<MyHomePage> {
       end: DateTime(DateTime.now().year, DateTime.now().month,
           DateTime.now().day, 23, 59, 59),
     );
+
+    // Callback ketika notifikasi diterima saat aplikasi aktif
+    // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    //   print('Received a message while in foreground: ${message.messageId}');
+    //   // Tampilkan notifikasi lokal atau lakukan aksi lain
+    // });
+
+    // // Callback ketika notifikasi diterima dan user mengklik notifikasi
+    // FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    //   print('User clicked the notification: ${message.messageId}');
+    //   // Lakukan aksi lain seperti navigasi ke halaman tertentu
+    // });
+
+    setupFirebaseMessaging();
+    // setupVapidKey();
+    // setupPushNotification();
 
     _setupLogging();
   }
@@ -66,95 +198,111 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // // Pick image from gallery
-  // Future<void> pickImage() async {
-  //   final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  Stream<QuerySnapshot> instancesFirebase() {
+    return _selectedDateRange == null
+        // Fetching the collection from Firebase
+        ? FirebaseFirestore.instance
+            .collection("SafetyReport")
+            .orderBy("Time stamp", descending: !_isDescending)
+            .snapshots()
+        : FirebaseFirestore.instance
+            .collection("SafetyReport")
+            .where("Time stamp",
+                isGreaterThanOrEqualTo: _selectedDateRange!.start)
+            .where("Time stamp", isLessThanOrEqualTo: _selectedDateRange!.end)
+            .orderBy("Time stamp", descending: !_isDescending)
+            .snapshots();
+  }
 
-  //   setState(() {
-  //     if (pickedFile != null) {
-  //       _imageFile = File(pickedFile.path);
-  //     } else {
-  //       log.info('No item selected.');
-  //     }
-  //   });
-  // }
+  // Pick image from gallery
+  Future<void> pickImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-  // // Compress image
-  // Future<File?> compressImage(File file) async {
-  //   final bytes = file.readAsBytesSync();
-  //   final img.Image? image = img.decodeImage(bytes);
+    setState(() {
+      if (pickedFile != null) {
+        _imageFile = File(pickedFile.path);
+      } else {
+        log.info('No item selected.');
+      }
+    });
+  }
 
-  //   if (image == null) {
-  //     log.warning('Unable to decode image.');
-  //     return null;
-  //   }
+  // Compress image
+  Future<File?> compressImage(File file) async {
+    final bytes = file.readAsBytesSync();
+    final img.Image? image = img.decodeImage(bytes);
 
-  //   int width;
-  //   int height;
+    if (image == null) {
+      log.warning('Unable to decode image.');
+      return null;
+    }
 
-  //   if (image.width > image.height) {
-  //     width = 1000;
-  //     height = (image.height / image.width * 1000).round();
-  //   } else {
-  //     height = 1000;
-  //     width = (image.width / image.height * 1000).round();
-  //   }
+    int width;
+    int height;
 
-  //   img.Image resizedImage =
-  //       img.copyResize(image, width: width, height: height);
+    if (image.width > image.height) {
+      width = 1000;
+      height = (image.height / image.width * 1000).round();
+    } else {
+      height = 1000;
+      width = (image.width / image.height * 1000).round();
+    }
 
-  //   final compressedBytes = img.encodeJpg(resizedImage, quality: 100);
+    img.Image resizedImage =
+        img.copyResize(image, width: width, height: height);
 
-  //   // Save compressed image to temporary file
-  //   final tempDir = Directory.systemTemp;
-  //   final tempFile = File('${tempDir.path}/temp_image.jpg');
-  //   tempFile.writeAsBytesSync(compressedBytes);
+    final compressedBytes = img.encodeJpg(resizedImage, quality: 100);
 
-  //   return tempFile;
-  // }
+    // Save compressed image to temporary file
+    final tempDir = Directory.systemTemp;
+    final tempFile = File('${tempDir.path}/temp_image.jpg');
+    tempFile.writeAsBytesSync(compressedBytes);
 
-  // // Upload image to Firebase Storage and get URL
-  // Future<void> uploadImage() async {
-  //   if (_imageFile == null) return;
+    return tempFile;
+  }
 
-  //   final compressedFile = await compressImage(_imageFile!);
-  //   if (compressedFile == null) return;
+  // Upload image to Firebase Storage and get URL
+  Future<void> uploadImage() async {
+    if (_imageFile == null) return;
 
-  //   final originalFileName = _imageFile!.path.split('/').last;
-  //   final destination = 'images/$originalFileName';
+    final compressedFile = await compressImage(_imageFile!);
+    if (compressedFile == null) return;
 
-  //   try {
-  //     final ref = FirebaseStorage.instance.ref(destination);
-  //     await ref.putFile(compressedFile);
-  //     String imageUrl = await ref.getDownloadURL();
+    final originalFileName = _imageFile!.path.split('/').last;
+    final destination = 'images/$originalFileName';
 
-  //     setState(() {
-  //       image = imageUrl;
-  //     });
+    try {
+      final ref = FirebaseStorage.instance.ref(destination);
+      await ref.putFile(compressedFile);
+      String imageUrl = await ref.getDownloadURL();
 
-  //     log.info('Image uploaded: $imageUrl');
-  //   } catch (e) {
-  //     log.severe('Error occurred while uploading image: $e');
-  //   }
-  // }
+      setState(() {
+        image = imageUrl;
+      });
 
-  // //Create dan submit data
-  // Future<void> createData() async {
-  //   await uploadImage();
+      log.info('Image uploaded: $imageUrl');
+    } catch (e) {
+      log.severe('Error occurred while uploading image: $e');
+    }
+  }
 
-  //   DocumentReference documentReference = db.collection("SafetyReport").doc();
+  //Create dan submit data
+  Future<void> createData() async {
+    await uploadImage();
 
-  //   Map<String, dynamic> mapData = {
-  //     "Image": image,
-  //     "Location": location,
-  //     "Safety Report": detectionStatus,
-  //     "Time stamp": Timestamp.now()
-  //   };
+    DocumentReference documentReference = db.collection("SafetyReport").doc();
 
-  //   documentReference.set(mapData).whenComplete(() {
-  //     log.finer("Document created with ID: ${documentReference.id}");
-  //   });
-  // }
+    Map<String, dynamic> mapData = {
+      "Image": image,
+      "Location": location,
+      "Safety Report": detectionStatus,
+      "Time stamp": Timestamp.now()
+    };
+
+    documentReference.set(mapData).whenComplete(() {
+      log.finer("Document created with ID: ${documentReference.id}");
+    });
+  }
 
   // Show date range picker and set state for date range
   Future<void> _selectDateRange(BuildContext context) async {
@@ -186,6 +334,33 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _selectedDateRange = null;
       });
+    } else if (value == 'logout') {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Confirm Logout"),
+            content: const Text("Are you sure you want to log out?"),
+            actions: <Widget>[
+              TextButton(
+                child: const Text("Cancel"),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+              ),
+              TextButton(
+                child:
+                    const Text("Log Out", style: TextStyle(color: Colors.red)),
+                onPressed: () {
+                  FirebaseAuth.instance.signOut();
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil("/login", (route) => false);
+                },
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 
@@ -201,236 +376,176 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-/*
-PR
-
-- Memindahkan fungsi onTap agar bisa bernavigasi ke detail Post 
-
--
-
-*/
   void navigateToDetailPage(DocumentSnapshot documentSnapshot) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DetailPage(documentSnapshot: documentSnapshot),
-      ),
-    );
-
-    // Navigator.pushNamed(context, '/SafetyReport/${documentSnapshot.id}');
-  }
-
-  Widget _buildInkWellListItem(DocumentSnapshot documentSnapshot) {
-    Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
-
-    dynamic timestamp = data['Time stamp'];
-    String formattedDate;
-
-    if (timestamp is Timestamp) {
-      DateTime dateTime = timestamp.toDate();
-      formattedDate =
-          DateFormat('MMMM d, yyyy \'at\' h:mm:ss a').format(dateTime);
-    } else if (timestamp is int) {
-      DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      formattedDate =
-          DateFormat('MMMM d, yyyy \'at\' h:mm:ss a').format(dateTime);
-    } else {
-      formattedDate = 'No Timestamp';
-    }
-
-    return InkWell(
-      onTap: () => navigateToDetailPage(documentSnapshot),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 2.0),
-        child: Card(
-          elevation: 0,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(left: 16, top: 16, bottom: 16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: data['Image'] != null
-                      ? Image.network(data['Image'],
-                          height: 72, width: 72, fit: BoxFit.cover)
-                      : const SizedBox(
-                          height: 72,
-                          width: 72,
-                          child: Icon(Icons.image_not_supported, size: 72)),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AutoSizeText(data['Location'] ?? 'No Location',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    AutoSizeText(formattedDate,
-                        style: const TextStyle(fontSize: 12), maxLines: 2),
-                    AutoSizeText('ID: ${documentSnapshot.id}',
-                        style: const TextStyle(fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                  ],
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.all(8),
-                child: AutoSizeText('${data['Safety Report'] ?? 'No Status'}',
-                    maxLines: 2,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: getStatusColor(data['Safety Report'] ?? ''),
-                    )),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInkWellGridItem(DocumentSnapshot documentSnapshot) {
-    Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
-
-    dynamic timestamp = data['Time stamp'];
-    String formattedDate;
-
-    if (timestamp is Timestamp) {
-      DateTime dateTime = timestamp.toDate();
-      formattedDate =
-          DateFormat('MMMM d, yyyy \'at\' h:mm:ss a').format(dateTime);
-    } else if (timestamp is int) {
-      DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      formattedDate =
-          DateFormat('MMMM d, yyyy \'at\' h:mm:ss a').format(dateTime);
-    } else {
-      formattedDate = 'No Timestamp';
-    }
-
-    return InkWell(
-      onTap: () => navigateToDetailPage(documentSnapshot),
-      child: Card(
-        elevation: 0,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: data['Image'] != null
-                    ? Image.network(data['Image'], fit: BoxFit.cover)
-                    : const Center(child: Icon(Icons.image_not_supported)),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AutoSizeText(
-                    data['Location'] ?? 'No Location',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  AutoSizeText(
-                    formattedDate,
-                    style: const TextStyle(fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  AutoSizeText(
-                    'ID: ${documentSnapshot.id}', // Display document ID
-                    style: const TextStyle(fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.all(8),
-              child: AutoSizeText(
-                '${data['Safety Report'] ?? 'No Status'}',
-                maxLines: 2,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: getStatusColor(data['Safety Report'] ?? ''),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Get status color based on detection status
-  Color getStatusColor(String status) {
-    switch (status) {
-      case "No Googles":
-        return Colors.blue;
-      case "No Coat":
-        return Colors.orange;
-      case "No Helmet":
-        return Colors.red;
-      case "No Boots":
-        return Colors.brown;
-      default:
-        return Colors.black;
-    }
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => DetailPage(documentSnapshot: documentSnapshot),
+    //   ),
+    // );
+    Navigator.pushNamed(context, '/SafetyReport/${documentSnapshot.id}');
   }
 
   @override
   Widget build(BuildContext context) {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+    final String email = user?.email ?? 'Unknown Email';
+
     return Scaffold(
       // Top Bar Menu Aplikasi Untuk Show All Data dan Grid/List View
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-        decoration: BoxDecoration(
-          color: Colors.blue,
-        ),
-        child: Text('Drawer Header'),
-      ),
-      ListTile(
-        title: const Text('Item 1'),
-        onTap: () {
-         Navigator.pushNamed(context, '/error');
-        },
-      ),
+            UserAccountsDrawerHeader(
+              accountName: const Text('Safety Project'),
+              accountEmail: Text(email),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: ClipOval(
+                  child: Image.asset(
+                    'lib/images/safety.png',
+                    fit: BoxFit.cover,
+                    width: 90,
+                    height: 90,
+                  ),
+                ),
+              ),
+              decoration: const BoxDecoration(
+                color: Color(0xFF36618E),
+                image: DecorationImage(
+                    fit: BoxFit.fill, image: AssetImage('lib/images/profile-bg.jpg'),),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.today_rounded),
+              title: const Text('Show Today\'s Data'),
+              onTap: () {
+                String value = 'today';
+                _handleMenuSelection(value);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.all_inbox_rounded),
+              title: const Text('Show All Data'),
+              onTap: () {
+                String value = 'all';
+                _handleMenuSelection(value);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded),
+              title: const Text('Log Out'),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text("Confirm Logout"),
+                      content: const Text("Are you sure you want to log out?"),
+                      actions: <Widget>[
+                        TextButton(
+                          child: const Text("Cancel"),
+                          onPressed: () {
+                            Navigator.of(context).pop(); // Close the dialog
+                          },
+                        ),
+                        TextButton(
+                          child: const Text("Log Out",
+                              style: TextStyle(color: Colors.red)),
+                          onPressed: () {
+                            FirebaseAuth.instance.signOut();
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                                "/login", (route) => false);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
       ),
-      appBar: AppBar(
-        backgroundColor: Colors.blue,
-        title:
-            const Text('Safety Report', style: TextStyle(color: Colors.white)),
-        actions: [
-          IconButton(
-            color: Colors.white,
-            icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
-            onPressed: _toggleViewMode,
+
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: SafeArea(
+          child: AppBar(
+            iconTheme: const IconThemeData(color: Colors.white),
+            backgroundColor: const Color(0xFF36618E),
+            title: InkWell(
+              onTap: () {
+                // Navigator.pushReplacement(
+                //   context,
+                //   MaterialPageRoute(builder: (context) => const MyHomePage()),
+                // );
+
+                Navigator.pushReplacementNamed(context, '/home');
+              },
+              child: const Text('Safety Report',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            actions: [
+              // IconButton(
+              //   color: Colors.white,
+              //   icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+              //   onPressed: _toggleViewMode,
+              // ),
+              PopupMenuButton<String>(
+                color: Colors.white,
+                onSelected: _handleMenuSelection,
+                itemBuilder: (BuildContext context) {
+                  return [
+                    const PopupMenuItem<String>(
+                      value: 'today',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.today_rounded,
+                            color: Colors.black,
+                          ),
+                          SizedBox(width: 4),
+                          Text('Show Today\'s Data'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'all',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.all_inbox_rounded,
+                            color: Colors.black,
+                          ),
+                          SizedBox(width: 4),
+                          Text('Show All Data'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.logout_rounded,
+                            color: Colors.black,
+                          ),
+                          SizedBox(width: 4),
+                          Text('Log Out'),
+                        ],
+                      ),
+                    ),
+                  ];
+                },
+              ),
+            ],
           ),
-          PopupMenuButton<String>(
-            onSelected: _handleMenuSelection,
-            itemBuilder: (BuildContext context) {
-              return [
-                const PopupMenuItem<String>(
-                  value: 'today',
-                  child: Text('Show Today\'s Data'),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'all',
-                  child: Text('Show All Data'),
-                ),
-              ];
-            },
-          ),
-        ],
+        ),
       ),
       body: GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -526,13 +641,13 @@ PR
                   //   ),
                   // ),
 
-                  // //
-
+                  //
                   const SizedBox(
                     height: 24,
                   ),
+                  //
 
-                  // Memilih Date Range
+                  /*Memilih Date Range */
 
                   TextButton.icon(
                     onPressed: () => _selectDateRange(context),
@@ -551,12 +666,12 @@ PR
                   ),
 
                   //
-
                   const SizedBox(
                     height: 16,
                   ),
+                  //
 
-                  // Text Date Range yang telah di pick
+                  /* Text Date Range yang telah di pick */
 
                   if (_selectedDateRange != null) ...[
                     Padding(
@@ -565,50 +680,32 @@ PR
                       child: Align(
                         alignment: Alignment.center,
                         child: AutoSizeText(
-                          'Selected date range: ${DateFormat('dd-MM-yyyy').format(_selectedDateRange!.start)} to ${DateFormat('dd-MM-yyyy').format(_selectedDateRange!.end)}',
+                          isSameDate(_selectedDateRange!.start, DateTime.now())
+                              ? 'Selected date range: Today ${DateFormat('d MMMM yyyy').format(_selectedDateRange!.start)}'
+                              : 'Selected date range: ${DateFormat('d MMMM yyyy').format(_selectedDateRange!.start)} to ${DateFormat('d MMMM yyyy').format(_selectedDateRange!.end)}',
                           style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                    ),
+                  ] else if (_selectedDateRange == null) ...[
+                    const Padding(
+                      padding: EdgeInsets.only(left: 10, right: 10, bottom: 10),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Selected date range: All Time',
+                          style: TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.visible,
                         ),
                       ),
                     ),
                   ],
-
                   //
 
-                  //Report Title
-
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(left: 10, right: 10, bottom: 15),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: AutoSizeText(
-                            'Report',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w500, fontSize: 20),
-                          ),
-                        ),
-
-                        //Ascending/Descending Button
-
-                        IconButton(
-                          icon: _isDescending
-                              ? Transform.flip(
-                                  flipY: true,
-                                  child: const Icon(Icons.sort),
-                                )
-                              : const Icon(Icons.sort),
-                          onPressed: _toggleSortOrder,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  //
-
-                  // Search TextBox
+                  /* Search TextBox */
 
                   SizedBox(
                     width: MediaQuery.of(context).orientation ==
@@ -635,30 +732,11 @@ PR
 
                   //
 
-                  // Streambuilder untuk menampilkan data dari Firebase
-
-                  StreamBuilder(
-                    stream: _selectedDateRange == null
-                        //Memanggil Collection yang ada di Firebase
-                        ? FirebaseFirestore.instance
-                            .collection("SafetyReport")
-                            .orderBy("Time stamp", descending: !_isDescending)
-                            .snapshots()
-                        : FirebaseFirestore.instance
-                            .collection("SafetyReport")
-                            .where("Time stamp",
-                                isGreaterThanOrEqualTo:
-                                    _selectedDateRange!.start)
-                            .where("Time stamp",
-                                isLessThanOrEqualTo: _selectedDateRange!.end)
-                            .orderBy("Time stamp", descending: !_isDescending)
-                            .snapshots(),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: instancesFirebase(),
                     builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      } else if (!snapshot.hasData ||
-                          snapshot.data!.docs.isEmpty) {
-                        return const Text('No reports found.');
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Text('');
                       } else {
                         final docs = snapshot.data!.docs.where((doc) {
                           Map<String, dynamic> data =
@@ -682,11 +760,9 @@ PR
                         }).toList();
 
                         if (docs.isEmpty) {
-                          return const Text(
-                              'No reports found or the value may be a null.');
+                          return const Text('');
                         }
 
-                        //Me-return data Firebase dalam bentuk Grid/List
                         return Column(
                           children: [
                             Text('Total Reports: ${docs.length}',
@@ -695,67 +771,134 @@ PR
                             const SizedBox(
                               height: 12,
                             ),
-                            SizedBox(
+                          ],
+                        );
+                      }
+                    },
+                  ),
+
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(left: 10, right: 10, bottom: 15),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: AutoSizeText(
+                            'Report',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w500, fontSize: 20),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize
+                              .min, // Prevents Row from taking extra space
+                          children: [
+                            IconButton(
+                              icon: Icon(_isGridView
+                                  ? Icons.view_list
+                                  : Icons.grid_view),
+                              onPressed: _toggleViewMode,
+                            ),
+                            IconButton(
+                              icon: _isDescending
+                                  ? Transform.flip(
+                                      flipY: true,
+                                      child: const Icon(Icons.sort),
+                                    )
+                                  : const Icon(Icons.sort),
+                              onPressed: _toggleSortOrder,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Streambuilder untuk menampilkan data dari Firebase
+
+                  StreamBuilder<QuerySnapshot>(
+                    stream: instancesFirebase(),
+                    builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(
+                          child: Text('No reports.'),
+                        );
+                      } else {
+                        final docs = snapshot.data!.docs.where((doc) {
+                          Map<String, dynamic> data =
+                              doc.data() as Map<String, dynamic>;
+                          String location =
+                              data['Location']?.toString().toLowerCase() ?? '';
+                          String safetyReport =
+                              data['Safety Report']?.toString().toLowerCase() ??
+                                  '';
+                          String timestamp = (data['Time stamp'] is Timestamp)
+                              ? DateFormat('MMMM d, yyyy \'at\' h:mm:ss a')
+                                  .format(data['Time stamp'].toDate())
+                                  .toLowerCase()
+                              : '';
+                          String docId = doc.id.toLowerCase();
+
+                          return location.contains(searchQuery) ||
+                              safetyReport.contains(searchQuery) ||
+                              timestamp.contains(searchQuery) ||
+                              docId.contains(searchQuery);
+                        }).toList();
+
+                        if (docs.isEmpty) {
+                          return const Center(
+                            child: Text(
+                                'No reports found or the search value may not valid.'),
+                          );
+                        }
+
+                        // Me-return data Firebase dalam bentuk Grid/List
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Determine the number of items per row for GridView
+                            int itemsPerRow;
+                            // Define your desired item width
+                            double itemWidth = 150;
+                            double screenWidth = constraints.maxWidth;
+
+                            // Calculate items per row based on screen width
+                            itemsPerRow = (screenWidth / itemWidth).floor();
+                            itemsPerRow = itemsPerRow > 6 ? 6 : itemsPerRow;
+                            return SizedBox(
                               height: MediaQuery.of(context).size.height,
                               width: MediaQuery.of(context).size.width,
                               child: _isGridView
-                                  ? LayoutBuilder(
-                                      builder: (context, constraints) {
-                                      return GridView.builder(
-                                        shrinkWrap: true,
-                                        gridDelegate:
-                                            SliverGridDelegateWithMaxCrossAxisExtent(
-                                          maxCrossAxisExtent: kIsWeb
-                                              ? MediaQuery.of(context)
-                                                      .size
-                                                      .width /
-                                                  4
-                                              : (defaultTargetPlatform ==
-                                                          TargetPlatform
-                                                              .windows ||
-                                                      defaultTargetPlatform ==
-                                                          TargetPlatform
-                                                              .macOS ||
-                                                      defaultTargetPlatform ==
-                                                          TargetPlatform.linux)
-                                                  ? MediaQuery.of(context)
-                                                          .size
-                                                          .width /
-                                                      4
-                                                  : MediaQuery.of(context)
-                                                              .orientation ==
-                                                          Orientation.portrait
-                                                      ? MediaQuery.of(context)
-                                                              .size
-                                                              .width /
-                                                          2
-                                                      : MediaQuery.of(context)
-                                                              .size
-                                                              .width /
-                                                          4,
-                                          crossAxisSpacing: 4.0,
-                                          mainAxisSpacing: 4.0,
-                                        ),
-                                        itemCount: docs.length,
-                                        itemBuilder: (context, index) {
-                                          DocumentSnapshot documentSnapshot =
-                                              docs[index];
-                                          return _buildInkWellGridItem(
-                                              documentSnapshot);
-                                        },
-                                      );
-                                    })
-                                  : ListView(
-                                      children:
-                                          List.generate(docs.length, (index) {
+                                  ? DynamicHeightGridView(
+                                      shrinkWrap: true,
+                                      physics: BouncingScrollPhysics(),
+                                      crossAxisCount: itemsPerRow,
+                                      crossAxisSpacing: 4.0,
+                                      mainAxisSpacing: 4.0,
+                                      itemCount: docs.length,
+                                      builder: (context, index) {
                                         DocumentSnapshot documentSnapshot =
                                             docs[index];
-                                        return _buildInkWellListItem(
-                                            documentSnapshot);
-                                      }),
+                                        return MyGridInkWell(
+                                          documentSnapshot: documentSnapshot,
+                                          onTap: navigateToDetailPage,
+                                        );
+                                      },
+                                    )
+                                  : ListView.builder(
+                                      itemCount: docs.length,
+                                      itemBuilder: (context, index) {
+                                        DocumentSnapshot documentSnapshot =
+                                            docs[index];
+                                        return MyListInkWell(
+                                          documentSnapshot: documentSnapshot,
+                                          onTap: navigateToDetailPage,
+                                        );
+                                      },
                                     ),
-                            ),
-                          ],
+                            );
+                          },
                         );
                       }
                     },
