@@ -4,7 +4,9 @@ import 'package:safetyreport/components/my_texfield.dart';
 import 'package:safetyreport/user_auth/firebase_auth_service.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  final String? redirectUrl;
+
+  const LoginPage({Key? key, this.redirectUrl}) : super(key: key);
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -151,6 +153,10 @@ class _LoginPageState extends State<LoginPage> {
     if (user != null) {
       print("User successfully signed in");
       Navigator.pushReplacementNamed(context, "/home");
+      if (widget.redirectUrl != null) {
+        Navigator.pushNamed(context, widget.redirectUrl!);
+      }
+
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to sign in. Please check your credentials.")),
