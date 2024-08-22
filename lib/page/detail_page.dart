@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart'; 
 import 'package:universal_html/html.dart' as html; // 
@@ -38,7 +39,17 @@ class DetailPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Page'),
+        title: InkWell(
+          onTap: (){
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(builder: (context) => const MyHomePage()),
+        // );
+
+        Navigator.pushReplacementNamed(context, '/home');
+          },
+          child: const Text('Detail Page'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.download),
@@ -70,6 +81,7 @@ class DetailPage extends StatelessWidget {
               _showDeleteConfirmationDialog(context);
             },
           ),
+
         ],
       ),
       body: SingleChildScrollView(
@@ -178,62 +190,135 @@ class DetailPage extends StatelessWidget {
     });
   }
 
-  Future<void>  _downloadImage(String url, BuildContext context) async {
-    try {
-      if (kIsWeb) {
-        // Web-specific code to download image
-        var imgReq = html.HttpRequest();
-        imgReq.open('GET', url);
-        imgReq.responseType = 'blob';
-        imgReq.onLoadEnd.listen((e) {
-          final blob = imgReq.response;
-          final url = html.Url.createObjectUrlFromBlob(blob);
-          final anchor = html.AnchorElement(href: url)
-            ..setAttribute("download", "image.png")
-            ..click();
-          html.Url.revokeObjectUrl(url);
-        });
-        imgReq.send();
-      } else {
-        // Mobile-specific code to download image
-        // Get the application documents directory
-        Directory appDocDir = await getApplicationDocumentsDirectory();
-        String appDocPath = appDocDir.path;
+//   Future<void> _downloadImage(String url, BuildContext context) async {
+//   try {
+//     if (kIsWeb) {
+//       // Web-specific code to download image
+//       var imgReq = html.HttpRequest();
+//       imgReq.open('GET', url);
+//       imgReq.responseType = 'blob';
+//       imgReq.onLoadEnd.listen((e) {
+//         final blob = imgReq.response;
+//         final url = html.Url.createObjectUrlFromBlob(blob);
+//         final anchor = html.AnchorElement(href: url)
+//           ..setAttribute("download", "image.png")
+//           ..click();
+//         html.Url.revokeObjectUrl(url);
+//       });
+//       imgReq.send();
+//     } else {
+//       // Request storage permission for Android
+//       var status = await Permission.storage.request();
+//       if (status.isGranted) {
+//         // Mobile-specific code to download image
+//         Directory? appDocDir;
+        
+//         if (Platform.isAndroid && await Permission.manageExternalStorage.isGranted) {
+//           appDocDir = Directory('/storage/emulated/0/Download');
+//         } else {
+//           appDocDir = await getApplicationDocumentsDirectory();
+//         }
+        
+//         String appDocPath = appDocDir!.path;
 
-        // Create the file path to save the image
+//         // Create the file path to save the image
+//         String fileName = url.split('/').last;
+//         String filePath = '$appDocPath/$fileName';
+
+//         // Download the image
+//         Dio dio = Dio();
+//         await dio.download(url, filePath);
+
+//         // Show success message
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           const SnackBar(content: Text("Image downloaded successfully")),
+//         );
+//       } else {
+//         // Show error message if permission is denied
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           const SnackBar(content: Text("Storage permission denied")),
+//         );
+//       }
+//     }
+//   } catch (error) {
+//     // Show error message
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text("Failed to download image: $error")),
+//     );
+//   }
+// }
+
+Future<void> _downloadImage(String url, BuildContext context) async {
+  try {
+    if (kIsWeb) {
+      // Kode khusus untuk mengunduh gambar di web
+      var imgReq = html.HttpRequest();
+      imgReq.open('GET', url);
+      imgReq.responseType = 'blob';
+      imgReq.onLoadEnd.listen((e) {
+        final blob = imgReq.response;
+        final downloadUrl = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: downloadUrl)
+          ..setAttribute("download", "image.png")
+          ..click();
+        html.Url.revokeObjectUrl(downloadUrl);
+      });
+      imgReq.send();
+    } else {
+      // Meminta izin penyimpanan untuk Android
+      var status = await Permission.storage.request();
+      if (status.isGranted) {
+        // Kode khusus untuk mengunduh gambar di mobile
+        Directory? appDocDir;
+
+        // Memeriksa izin manageExternalStorage untuk Android
+        if (Platform.isAndroid && await Permission.manageExternalStorage.isGranted) {
+          appDocDir = Directory('/storage/emulated/0/Download');
+        } else if (Platform.isAndroid) {
+          appDocDir = await getExternalStorageDirectory();
+        } else {
+          appDocDir = await getApplicationDocumentsDirectory();
+        }
+
+        String appDocPath = appDocDir!.path;
+
+        // Membuat path file untuk menyimpan gambar
         String fileName = url.split('/').last;
         String filePath = '$appDocPath/$fileName';
 
-        // Download the image
+        // Mengunduh gambar
         Dio dio = Dio();
         await dio.download(url, filePath);
 
-        // Show success message
+        // Menampilkan pesan sukses
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Image downloaded successfully")),
+          SnackBar(content: Text("Image downloaded successfully at $filePath")),
+        );
+      } else {
+        // Menampilkan pesan error jika izin ditolak
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Storage permission denied")),
         );
       }
-    } catch (error) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to download image: $error")),
-      );
     }
+  } catch (error) {
+    // Menampilkan pesan error yang lebih deskriptif
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Failed to download image: ${error.toString()}")),
+    );
   }
+}
 
   void _shareContent(BuildContext context, Map<String, dynamic> data) {
     String shareText = '''
-      ${documentSnapshot.reference.path}
-      Location: ${data['Location'] ?? 'No Location'}
-      Date: ${data['Time stamp'] != null ? DateFormat('MMMM d, yyyy \'at\' h:mm:ss a').format((data['Time stamp'] as Timestamp).toDate()) : 'No Timestamp'}
-      Safety Report: ${data['Safety Report'] ?? 'No Status'}
+      safetyreportproject.web.app/${documentSnapshot.reference.path}
     ''';
 
     if (kIsWeb) {
       // Web-specific code to share content
       html.window.navigator.share({
-        'title': 'Detail Page',
-        'text': shareText,
+        // 'title': 'Detail Page',
+        // 'text': shareText,
         'url': documentSnapshot.reference.path, // Share URL if needed
       }).catchError((error) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -247,7 +332,7 @@ class DetailPage extends StatelessWidget {
 
   void _copyLinkToClipboard(BuildContext context) {
     Clipboard.setData(
-      ClipboardData(text: documentSnapshot.reference.path),
+      ClipboardData(text: 'safetyreportproject.web.app/${documentSnapshot.reference.path}'),
     ).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Link copied to clipboard")),
@@ -258,6 +343,9 @@ class DetailPage extends StatelessWidget {
       );
     });
   }
+
+
+  
 
   Color getStatusColor(String status) {
     switch (status) {

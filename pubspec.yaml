@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -54,10 +57,17 @@ dependencies:
   share_plus: ^10.0.0
   dio: ^5.5.0+1
   geolocator: ^12.0.0
-  firebase_auth: ^5.1.4
-  firebase_messaging: ^15.0.4
   url_strategy: ^0.3.0
+  go_router: ^14.2.3
+  firebase_messaging: ^15.0.4
+  permission_handler: ^11.3.1
+  flutter_local_notifications: ^17.2.2
+  custom_flutter_toast: ^0.0.5
+  awesome_notifications: ^0.9.3+1
+  firebase_auth: ^5.1.4
+  dynamic_height_grid_view: ^0.0.4
 
+  intl: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -67,7 +77,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -99,9 +109,11 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - lib/images/safety.png
+    - lib/images/safetyreport.svg
+    - lib/images/profile-bg.jpg
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

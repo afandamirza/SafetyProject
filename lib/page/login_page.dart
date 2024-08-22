@@ -1,105 +1,166 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:safetyreport/components/my_texfield.dart';
 import 'package:safetyreport/user_auth/firebase_auth_service.dart';
-import 'package:safetyreport/widget/form_container_widget.dart';
 
 class LoginPage extends StatefulWidget {
   final String? redirectUrl;
 
-  const LoginPage({Key? key, this.redirectUrl}) : super(key: key);
+  const LoginPage({super.key, this.redirectUrl});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-
   final FirebaseAuthService _auth = FirebaseAuthService();
-
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login Page'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 15.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Login", 
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(
-              height: 30,
-            ),
-            FormContainerWidget(
-              controller: _emailController,
-              hintText: "Email",
-              isPasswordField: false,
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            FormContainerWidget(
-              controller: _passwordController,
-              hintText: "Password",
-              isPasswordField: true,
-            ),
-            SizedBox(height: 30,),
-            GestureDetector(
-              onTap: _signIn,
-              child:  Container(
-                width: double.infinity,
-                height: 45,
-                decoration:  BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(10),
+      backgroundColor: Colors.white,
+      body: GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 45),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 400, // Set the maximum width for the container
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(width: 0.2)
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 30),
+                        // Logo
+                        SizedBox(
+                          height: 100,
+                          child: Image.asset('lib/images/safety.png'),
+                        ),
+                        const SizedBox(height: 30),
+                        // Welcome Back
+                        const Text(
+                          'Welcome Back',
+                          style: TextStyle(color: Colors.black87, fontSize: 20),
+                        ),
+                        const SizedBox(height: 30),
+                        // Email Textfield
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: MyTexfield(
+                            controller: emailController,
+                            hintText: 'Email',
+                            obscureText: false,
+                            onSubmitted: (_) => _signIn()
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        // Password Textfield
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: MyTexfield(
+                            controller: passwordController,
+                            hintText: 'Password',
+                            obscureText: true,
+                            onSubmitted: (_) => _signIn(),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Sign In Button
+                        SizedBox(
+                          width: 200,
+                          child: ElevatedButton(
+                            onPressed: _signIn,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.all(12),
+                              backgroundColor: const Color(0xFF36618E),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    "Sign In",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Forgot Password Text
+                        const Text(
+                          "Safety Report",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Center(child: Text("Login", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),))
-            )
+              ),
             ),
-          ],
-          )
-        )
-      )
+          ),
+        ),
+      ),
     );
   }
 
   void _signIn() async {
+    String email = emailController.text;
+    String password = passwordController.text;
 
-    String email = _emailController.text;
-    String password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email and password cannot be empty")),
+      );
+      return;
+    }
 
-    // if (email.isNotEmpty && password.isNotEmpty) {
-    //   await _auth.signIn(email, password);
-    // } else {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text("Email and password cannot be empty")),
-    //   );
-    // }
+    setState(() {
+      _isLoading = true;
+    });
+
     User? user = await _auth.signInWithEmailAndPassword(email, password);
 
-    if (user != null){
-      print("User successfully sign in");
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (user != null) {
+      print("User successfully signed in");
       Navigator.pushReplacementNamed(context, "/home");
       if (widget.redirectUrl != null) {
         Navigator.pushNamed(context, widget.redirectUrl!);
       }
+
     } else {
-      print("User failed to sign in");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to sign in. Please check your credentials.")),
+      );
     }
   }
 }
