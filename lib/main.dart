@@ -6,13 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:go_router/go_router.dart';
 import 'package:safetyreport/not_found_page.dart';
 import 'package:safetyreport/page/detail_page.dart';
 import 'package:safetyreport/page/home_page.dart';
 import 'package:safetyreport/page/login_page.dart';
 import 'firebase_options.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:safetyreport/widget/auth_guard.dart';
 import 'package:safetyreport/widget/login_check.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -59,7 +57,7 @@ void main() async {
   } catch (e) {
     if (kDebugMode) {
       print('Error fetching token: $e');
-      print('tokennya adalah ${token}');
+      print('tokennya adalah $token');
     }
   }
   // await FirebaseMessaging.instance.subscribeToTopic("report");
@@ -97,7 +95,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Safety Report',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF36618E)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF36618E)),
         useMaterial3: true,
       ),
       // initialRoute: '/login',
@@ -136,9 +134,9 @@ class MyApp extends StatelessWidget {
         return null;
       },
       routes: {
-        '/home': (context) => AuthGuard(child: MyHomePage()),
+        '/home': (context) => const AuthGuard(child: MyHomePage()),
         '/testnotfound': (context) => const NotFoundPage(),
-        '/login': (context) => LoginCheck(child: LoginPage()),
+        '/login': (context) => const LoginCheck(child: LoginPage()),
       },
     );
   }

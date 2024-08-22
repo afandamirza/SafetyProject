@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/rendering.dart';
 import 'package:logging/logging.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
@@ -16,13 +15,8 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:safetyreport/components/my_grid_inkwell.dart';
 import 'package:safetyreport/components/my_list_inkwell.dart';
 import 'package:safetyreport/firebase_options.dart';
-import 'package:safetyreport/page/detail_page.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'dart:io';
-import 'package:image/image.dart' as img;
 
-import 'package:geolocator/geolocator.dart';
 
 
 class MyHomePage extends StatefulWidget {
@@ -124,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     final token = await fcm.getToken();
     await fcm.subscribeToTopic("report");
-    print('FCM device token : ${token}');
+    print('FCM device token : $token');
   }
 
   void setupVapidKey() async {
@@ -879,7 +873,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: _isGridView
                                   ? DynamicHeightGridView(
                                       shrinkWrap: true,
-                                      physics: BouncingScrollPhysics(),
+                                      physics: const BouncingScrollPhysics(),
                                       crossAxisCount: itemsPerRow,
                                       crossAxisSpacing: 4.0,
                                       mainAxisSpacing: 4.0,

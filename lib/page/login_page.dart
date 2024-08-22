@@ -6,7 +6,7 @@ import 'package:safetyreport/user_auth/firebase_auth_service.dart';
 class LoginPage extends StatefulWidget {
   final String? redirectUrl;
 
-  const LoginPage({Key? key, this.redirectUrl}) : super(key: key);
+  const LoginPage({super.key, this.redirectUrl});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -51,9 +51,9 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         const SizedBox(height: 30),
                         // Logo
-                        Container(
-                          child: Image.asset('lib/images/safety.png'),
+                        SizedBox(
                           height: 100,
+                          child: Image.asset('lib/images/safety.png'),
                         ),
                         const SizedBox(height: 30),
                         // Welcome Back

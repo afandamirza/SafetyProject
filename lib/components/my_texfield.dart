@@ -32,7 +32,7 @@ class MyTexfield extends StatelessWidget {
             fillColor: Colors.white,
             filled: true,
             hintText: hintText,
-            hintStyle: TextStyle(color: Colors.black38)),
+            hintStyle: const TextStyle(color: Colors.black38)),
             onSubmitted: onSubmitted, // Handle the onSubmitted event
       ),
       

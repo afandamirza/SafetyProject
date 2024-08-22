@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 class LoginCheck extends StatelessWidget {
   final Widget child;
 
-  const LoginCheck({Key? key, required this.child}) : super(key: key);
+  const LoginCheck({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
