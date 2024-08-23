@@ -42,29 +42,28 @@ def upload_file():
         )
 
         #  ambil datetime saat ini
-        datetime_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # datetime_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = firestore.SERVER_TIMESTAMP
 
         # Ambil parameter lainnya dari request body
         latitude = request.form.get('Latitude')
         longitude = request.form.get('Longitude')
-        date = request.form.get('Date')
-        time = request.form.get('Time')
         details = request.form.get('Details')
 
         # Simpan data ke Firestore
         doc_ref = db.collection('SafetyReport').document()
         doc_ref.set({
-            'photoURL': photo_url,
+            'Image': photo_url,
             'Latitude': latitude,
             'Longitude': longitude,
-            'Datetime': datetime_now,
+            'Timestamp': timestamp,
             'Details': details,
         })
 
         return jsonify({
             'message': 'Data added successfully',
             'id': doc_ref.id,
-            'photoURL': photo_url,
+            'Image': photo_url,
         }), 200
 
     except Exception as e:

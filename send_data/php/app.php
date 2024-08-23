@@ -51,20 +51,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
 
             // Get the public URL of the uploaded file
-            $photoURL = $object->signedUrl(new DateTime('2500-03-01'));
+            $Image = $object->signedUrl(new DateTime('2500-03-01'));
 
             // Store data in Firestore
             $firestore->collection('SafetyReport')->add([
-                'photoURL' => $photoURL,
+                'Image' => $Image,
                 'Latitude' => $latitude,
                 'Longitude' => $longitude,
-                'DateTime' => $datetime,
+                'Timestamp' => $datetime,
                 'Details' => $details,
             ]);
 
             echo json_encode([
                 'message' => 'Data added successfully',
-                'photoURL' => $photoURL,
+                'Image' => $Image,
             ]);
 
         } catch (Exception $e) {
