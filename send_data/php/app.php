@@ -29,8 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $image = $_FILES['Image'];
         $latitude = $_POST['Latitude'];
         $longitude = $_POST['Longitude'];
-        $date = $_POST['Date'];
-        $time = $_POST['Time'];
+        // $date = $_POST['Date'];
+        // $time = $_POST['Time'];
+        $datetime = new DateTime('now', new DateTimeZone('Asia/Manila'));
+        $datetime = $datetime->format('Y-m-d H:i:s');
         $details = $_POST['Details'];
 
         try {
@@ -56,8 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'photoURL' => $photoURL,
                 'Latitude' => $latitude,
                 'Longitude' => $longitude,
-                'Date' => $date,
-                'Time' => $time,
+                'DateTime' => $datetime,
                 'Details' => $details,
             ]);
 
