@@ -116,9 +116,9 @@ class _MyHomePageState extends State<MyHomePage> {
     final fcm = FirebaseMessaging.instance;
     await fcm.requestPermission();
 
-    final token = await fcm.getToken();
+    // final token = await fcm.getToken();
     await fcm.subscribeToTopic("report");
-    print('FCM device token : $token');
+    // print('FCM device token : $token');
   }
 
   void setupVapidKey() async {
@@ -185,9 +185,9 @@ class _MyHomePageState extends State<MyHomePage> {
     //   // Lakukan aksi lain seperti navigasi ke halaman tertentu
     // });
 
-    setupFirebaseMessaging();
+    // setupFirebaseMessaging();
     // setupVapidKey();
-    // setupPushNotification();
+    setupPushNotification();
 
     _setupLogging();
   }
@@ -491,60 +491,62 @@ class _MyHomePageState extends State<MyHomePage> {
               child: const Text('Safety Report',
                   style: TextStyle(color: Colors.white)),
             ),
-            actions: [
-              // IconButton(
-              //   color: Colors.white,
-              //   icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
-              //   onPressed: _toggleViewMode,
-              // ),
-              PopupMenuButton<String>(
-                color: Colors.white,
-                onSelected: _handleMenuSelection,
-                itemBuilder: (BuildContext context) {
-                  return [
-                    const PopupMenuItem<String>(
-                      value: 'today',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.today_rounded,
-                            color: Colors.black,
-                          ),
-                          SizedBox(width: 4),
-                          Text('Show Today\'s Data'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'all',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.all_inbox_rounded,
-                            color: Colors.black,
-                          ),
-                          SizedBox(width: 4),
-                          Text('Show All Data'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.logout_rounded,
-                            color: Colors.black,
-                          ),
-                          SizedBox(width: 4),
-                          Text('Log Out'),
-                        ],
-                      ),
-                    ),
-                  ];
-                },
-              ),
-            ],
+            // actions: [
+
+              
+            //   // IconButton(
+            //   //   color: Colors.white,
+            //   //   icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+            //   //   onPressed: _toggleViewMode,
+            //   // ),
+            //   PopupMenuButton<String>(
+            //     color: Colors.white,
+            //     onSelected: _handleMenuSelection,
+            //     itemBuilder: (BuildContext context) {
+            //       return [
+            //         const PopupMenuItem<String>(
+            //           value: 'today',
+            //           child: Row(
+            //             children: [
+            //               Icon(
+            //                 Icons.today_rounded,
+            //                 color: Colors.black,
+            //               ),
+            //               SizedBox(width: 4),
+            //               Text('Show Today\'s Data'),
+            //             ],
+            //           ),
+            //         ),
+            //         const PopupMenuItem<String>(
+            //           value: 'all',
+            //           child: Row(
+            //             children: [
+            //               Icon(
+            //                 Icons.all_inbox_rounded,
+            //                 color: Colors.black,
+            //               ),
+            //               SizedBox(width: 4),
+            //               Text('Show All Data'),
+            //             ],
+            //           ),
+            //         ),
+            //         const PopupMenuItem<String>(
+            //           value: 'logout',
+            //           child: Row(
+            //             children: [
+            //               Icon(
+            //                 Icons.logout_rounded,
+            //                 color: Colors.black,
+            //               ),
+            //               SizedBox(width: 4),
+            //               Text('Log Out'),
+            //             ],
+            //           ),
+            //         ),
+            //       ];
+            //     },
+            //   ),
+            // ],
           ),
         ),
       ),
@@ -619,28 +621,28 @@ class _MyHomePageState extends State<MyHomePage> {
 
                   // // Create Data Insert Image
 
-                  // Padding(
-                  //   padding: const EdgeInsets.all(8),
-                  //   child: Wrap(
-                  //     spacing: 10,
-                  //     children: <Widget>[
-                  //       ElevatedButton(
-                  //         style: ElevatedButton.styleFrom(
-                  //           padding: const EdgeInsets.symmetric(
-                  //               horizontal: 40, vertical: 2),
-                  //           foregroundColor: Colors.green,
-                  //         ),
-                  //         child: const Text(
-                  //           'Create',
-                  //           textAlign: TextAlign.center,
-                  //         ),
-                  //         onPressed: () {
-                  //           createData();
-                  //         },
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Wrap(
+                      spacing: 10,
+                      children: <Widget>[
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 2),
+                            foregroundColor: Colors.green,
+                          ),
+                          child: const Text(
+                            'Create',
+                            textAlign: TextAlign.center,
+                          ),
+                          onPressed: () {
+                            createData();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
 
                   //
                   const SizedBox(

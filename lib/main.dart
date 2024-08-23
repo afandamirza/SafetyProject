@@ -22,44 +22,44 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  // FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-  NotificationSettings settings = await messaging.requestPermission(
-    alert: true,
-    announcement: false,
-    badge: true,
-    carPlay: false,
-    criticalAlert: false,
-    provisional: false,
-    sound: true,
-  );
+  // NotificationSettings settings = await messaging.requestPermission(
+  //   alert: true,
+  //   announcement: false,
+  //   badge: true,
+  //   carPlay: false,
+  //   criticalAlert: false,
+  //   provisional: false,
+  //   sound: true,
+  // );
 
-  print('User granted permission: ${settings.authorizationStatus}');
+  // print('User granted permission: ${settings.authorizationStatus}');
 
-  // TODO: replace with your own VAPID key
-  const vapidKey =
-      "BGW04XbUXEZ6CfDXwTAPXn2XPhuNFSELmh5WqC1bccO4Kf0uU0Z2prX4mTvtjPej-64wOv8vlrKALskmjPZ0tPs";
+  // // TODO: replace with your own VAPID key
+  // const vapidKey =
+  //     "BGW04XbUXEZ6CfDXwTAPXn2XPhuNFSELmh5WqC1bccO4Kf0uU0Z2prX4mTvtjPej-64wOv8vlrKALskmjPZ0tPs";
 
-  // use the registration token to send messages to users from your trusted server environment
-  String? token;
+  // // use the registration token to send messages to users from your trusted server environment
+  // String? token;
 
-  try {
-    if (DefaultFirebaseOptions.currentPlatform == DefaultFirebaseOptions.web) {
-      token = await messaging.getToken(vapidKey: vapidKey);
-    } else {
-      token = await messaging.getToken();
-      print(token);
-    }
+  // try {
+  //   if (DefaultFirebaseOptions.currentPlatform == DefaultFirebaseOptions.web) {
+  //     token = await messaging.getToken(vapidKey: vapidKey);
+  //   } else {
+  //     token = await messaging.getToken();
+  //     print(token);
+  //   }
 
-    if (kDebugMode) {
-      print('Registration Token=$token');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      print('Error fetching token: $e');
-      print('tokennya adalah $token');
-    }
-  }
+  //   if (kDebugMode) {
+  //     print('Registration Token=$token');
+  //   }
+  // } catch (e) {
+  //   if (kDebugMode) {
+  //     print('Error fetching token: $e');
+  //     print('tokennya adalah $token');
+  //   }
+  // }
   // await FirebaseMessaging.instance.subscribeToTopic("report");
   // await messaging.subscribeToTopic('report');
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
