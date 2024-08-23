@@ -1,0 +1,31 @@
+python
+- buka ke path directory folder python
+- jalankan dengan command >> python app.py
+- server akan berjalan pada port 7000(dapat diubah, pada line paling bawah file app.py terdapat port atau CTRL+F lalu ketik port)
+
+untuk python perlu menginstall beberapa library yaitu flask dan firebase_admin
+jalankan dengan command >> pip install flask firebase_admin
+
+php
+- buka ke path directory folder php
+- jalankan dengan command >> php -S localhost:${port} app.php
+- server akan berjalan sesuai dengan port yang dimasukkan pada command
+
+untuk php perlu menginstall dependency terlebih dahulu 
+jalankan dengan command >> composer install
+
+
+
+cara melakukan POST menggunakan postman
+- jalankan server(bebas mau menggunakan python atau php)
+- lalu buka postman, klik new dan pilih HTTP
+- pilih POST untuk melakukan post pada endpoint yang telah dibuat
+- untuk linknya, dapat menggunakan ${Server}:${Port}/upload, dalam kasus ini karena masih local jadi makenya localhost:7000/upload
+- pada headers, untuk key pilih Content-Type dengan value multipart/form-data
+- untuk parameter, pada body, pilih form-data lalu masukkan key dan value sebagai berikut:
+Image (file) : pilih file foto yang diinginkan
+Latitude (Text) : input latitude
+Longitude (Text) : input longitude
+Details (Text) : ini untuk mengisi keterangan seperti NO Helmet, NO Vest, NO Googles
+
+- setelah itu, klik send, maka endpoint tersebut akan mengupload Image pada storage firebase, dan dengan link yang didapat akan menjadi parameter selain latitude, longitude, details, dan datetime(ini diambil secara otomatis saat melakukan penembakan pada endpoint)
