@@ -4,6 +4,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import os
 import uuid
+import datetime
 
 # Inisialisasi Firebase Admin SDK
 cred_path = os.path.join(os.path.dirname(__file__), '../safetyreportproject-firebase-adminsdk-fhskx-a449059455.json')
@@ -40,6 +41,9 @@ def upload_file():
             method='GET'
         )
 
+        #  ambil datetime saat ini
+        datetime_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         # Ambil parameter lainnya dari request body
         latitude = request.form.get('Latitude')
         longitude = request.form.get('Longitude')
@@ -53,8 +57,7 @@ def upload_file():
             'photoURL': photo_url,
             'Latitude': latitude,
             'Longitude': longitude,
-            'Date': date,
-            'Time': time,
+            'Datetime': datetime_now,
             'Details': details,
         })
 
