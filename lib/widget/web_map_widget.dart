@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class WebMap extends StatefulWidget {
+import 'map_widget.dart';
+
+// Update getMapWidget to accept latitude and longitude as parameters
+MapWidget getMapWidget(String latitude, String longitude) => WebMap(
+      latitude: double.parse(latitude),
+      longitude: double.parse(longitude),
+    );
+
+class WebMap extends StatefulWidget implements MapWidget {
+  final double latitude;
+  final double longitude;
+
+  WebMap({Key? key, required this.latitude, required this.longitude})
+      : super(key: key);
+
   @override
   State<WebMap> createState() => WebMapState();
 }
@@ -9,7 +23,8 @@ class WebMap extends StatefulWidget {
 class WebMapState extends State<WebMap> {
   late GoogleMapController mapController;
 
-  final LatLng _center = const LatLng(37.7749, -122.4194); // Example coordinates (San Francisco)
+  // Use the passed latitude and longitude to set the center
+  late final LatLng _center = LatLng(widget.latitude, widget.longitude);
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
@@ -18,16 +33,17 @@ class WebMapState extends State<WebMap> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Google Maps Example'),
-        backgroundColor: Colors.green[700],
-      ),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
         initialCameraPosition: CameraPosition(
           target: _center,
-          zoom: 11.0,
+          zoom: 15.0, // Adjust zoom level as needed
         ),
+        myLocationEnabled: true,
+        myLocationButtonEnabled: true,
+        mapType: MapType.normal,
+        zoomControlsEnabled: true,
+        compassEnabled: true,
         markers: {
           Marker(
             markerId: MarkerId('target-location'),
