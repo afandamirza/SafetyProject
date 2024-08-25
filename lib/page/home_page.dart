@@ -17,8 +17,6 @@ import 'package:safetyreport/components/my_list_inkwell.dart';
 import 'package:safetyreport/firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
-
-
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -116,9 +114,9 @@ class _MyHomePageState extends State<MyHomePage> {
     final fcm = FirebaseMessaging.instance;
     await fcm.requestPermission();
 
-    final token = await fcm.getToken();
+    // final token = await fcm.getToken();
     await fcm.subscribeToTopic("report");
-    print('FCM device token : $token');
+    // print('FCM device token : $token');
   }
 
   void setupVapidKey() async {
@@ -185,9 +183,9 @@ class _MyHomePageState extends State<MyHomePage> {
     //   // Lakukan aksi lain seperti navigasi ke halaman tertentu
     // });
 
-    setupFirebaseMessaging();
+    // setupFirebaseMessaging();
     // setupVapidKey();
-    // setupPushNotification();
+    setupPushNotification();
 
     _setupLogging();
   }
@@ -204,14 +202,14 @@ class _MyHomePageState extends State<MyHomePage> {
         // Fetching the collection from Firebase
         ? FirebaseFirestore.instance
             .collection("SafetyReport")
-            .orderBy("Time stamp", descending: !_isDescending)
+            .orderBy("Timestamp", descending: !_isDescending)
             .snapshots()
         : FirebaseFirestore.instance
             .collection("SafetyReport")
-            .where("Time stamp",
+            .where("Timestamp",
                 isGreaterThanOrEqualTo: _selectedDateRange!.start)
-            .where("Time stamp", isLessThanOrEqualTo: _selectedDateRange!.end)
-            .orderBy("Time stamp", descending: !_isDescending)
+            .where("Timestamp", isLessThanOrEqualTo: _selectedDateRange!.end)
+            .orderBy("Timestamp", descending: !_isDescending)
             .snapshots();
   }
 
@@ -297,7 +295,7 @@ class _MyHomePageState extends State<MyHomePage> {
       "Image": image,
       "Location": location,
       "Safety Report": detectionStatus,
-      "Time stamp": Timestamp.now()
+      "Timestamp": Timestamp.now()
     };
 
     documentReference.set(mapData).whenComplete(() {
@@ -416,27 +414,29 @@ class _MyHomePageState extends State<MyHomePage> {
               decoration: const BoxDecoration(
                 color: Color(0xFF36618E),
                 image: DecorationImage(
-                    fit: BoxFit.fill, image: AssetImage('lib/images/profile-bg.jpg'),),
+                  fit: BoxFit.fill,
+                  image: AssetImage('lib/images/profile-bg.jpg'),
+                ),
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.today_rounded),
-              title: const Text('Show Today\'s Data'),
-              onTap: () {
-                String value = 'today';
-                _handleMenuSelection(value);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.all_inbox_rounded),
-              title: const Text('Show All Data'),
-              onTap: () {
-                String value = 'all';
-                _handleMenuSelection(value);
-                Navigator.pop(context);
-              },
-            ),
+            // ListTile(
+            //   leading: const Icon(Icons.today_rounded),
+            //   title: const Text('Show Today\'s Data'),
+            //   onTap: () {
+            //     String value = 'today';
+            //     _handleMenuSelection(value);
+            //     Navigator.pop(context);
+            //   },
+            // ),
+            // ListTile(
+            //   leading: const Icon(Icons.all_inbox_rounded),
+            //   title: const Text('Show All Data'),
+            //   onTap: () {
+            //     String value = 'all';
+            //     _handleMenuSelection(value);
+            //     Navigator.pop(context);
+            //   },
+            // ),
             ListTile(
               leading: const Icon(Icons.logout_rounded),
               title: const Text('Log Out'),
@@ -491,60 +491,61 @@ class _MyHomePageState extends State<MyHomePage> {
               child: const Text('Safety Report',
                   style: TextStyle(color: Colors.white)),
             ),
-            actions: [
-              // IconButton(
-              //   color: Colors.white,
-              //   icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
-              //   onPressed: _toggleViewMode,
-              // ),
-              PopupMenuButton<String>(
-                color: Colors.white,
-                onSelected: _handleMenuSelection,
-                itemBuilder: (BuildContext context) {
-                  return [
-                    const PopupMenuItem<String>(
-                      value: 'today',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.today_rounded,
-                            color: Colors.black,
-                          ),
-                          SizedBox(width: 4),
-                          Text('Show Today\'s Data'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'all',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.all_inbox_rounded,
-                            color: Colors.black,
-                          ),
-                          SizedBox(width: 4),
-                          Text('Show All Data'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.logout_rounded,
-                            color: Colors.black,
-                          ),
-                          SizedBox(width: 4),
-                          Text('Log Out'),
-                        ],
-                      ),
-                    ),
-                  ];
-                },
-              ),
-            ],
+            // actions: [
+
+            //   // IconButton(
+            //   //   color: Colors.white,
+            //   //   icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+            //   //   onPressed: _toggleViewMode,
+            //   // ),
+            //   PopupMenuButton<String>(
+            //     color: Colors.white,
+            //     onSelected: _handleMenuSelection,
+            //     itemBuilder: (BuildContext context) {
+            //       return [
+            //         const PopupMenuItem<String>(
+            //           value: 'today',
+            //           child: Row(
+            //             children: [
+            //               Icon(
+            //                 Icons.today_rounded,
+            //                 color: Colors.black,
+            //               ),
+            //               SizedBox(width: 4),
+            //               Text('Show Today\'s Data'),
+            //             ],
+            //           ),
+            //         ),
+            //         const PopupMenuItem<String>(
+            //           value: 'all',
+            //           child: Row(
+            //             children: [
+            //               Icon(
+            //                 Icons.all_inbox_rounded,
+            //                 color: Colors.black,
+            //               ),
+            //               SizedBox(width: 4),
+            //               Text('Show All Data'),
+            //             ],
+            //           ),
+            //         ),
+            //         const PopupMenuItem<String>(
+            //           value: 'logout',
+            //           child: Row(
+            //             children: [
+            //               Icon(
+            //                 Icons.logout_rounded,
+            //                 color: Colors.black,
+            //               ),
+            //               SizedBox(width: 4),
+            //               Text('Log Out'),
+            //             ],
+            //           ),
+            //         ),
+            //       ];
+            //     },
+            //   ),
+            // ],
           ),
         ),
       ),
@@ -559,65 +560,65 @@ class _MyHomePageState extends State<MyHomePage> {
                 children: <Widget>[
                   // Create Data Insert Image
 
-                  _imageFile == null
-                      ? const Text('No image selected.')
-                      : Image.file(_imageFile!,
-                          height: 300, width: 300, fit: BoxFit.cover),
-                  const SizedBox(
-                    height: 24,
-                  ),
-                  ElevatedButton(
-                    onPressed: pickImage,
-                    child: const Text('Pick Image'),
-                  ),
+                  // _imageFile == null
+                  //     ? const Text('No image selected.')
+                  //     : Image.file(_imageFile!,
+                  //         height: 300, width: 300, fit: BoxFit.cover),
+                  // const SizedBox(
+                  //   height: 24,
+                  // ),
+                  // ElevatedButton(
+                  //   onPressed: pickImage,
+                  //   child: const Text('Pick Image'),
+                  // ),
 
-                  //Input Form
+                  // //Input Form
 
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: TextFormField(
-                      decoration: const InputDecoration(
-                          labelText: "Location",
-                          fillColor: Colors.white,
-                          focusedBorder: OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Colors.blue, width: 2.0),
-                          )),
-                      onChanged: (String location) {
-                        getLocation(location);
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: "Detection Status",
-                        fillColor: Colors.white,
-                        focusedBorder: OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: Colors.blue, width: 2.0),
-                        ),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                            value: "No Googles", child: Text("No Googles")),
-                        DropdownMenuItem(
-                            value: "No Coat", child: Text("No Coat")),
-                        DropdownMenuItem(
-                            value: "No Helmet", child: Text("No Helmet")),
-                        DropdownMenuItem(
-                            value: "No Boots", child: Text("No Boots")),
-                      ],
-                      onChanged: (String? status) {
-                        setState(() {
-                          getDetectionStatus(status!);
-                        });
-                      },
-                    ),
-                  ),
+                  // Padding(
+                  //   padding: const EdgeInsets.all(8),
+                  //   child: TextFormField(
+                  //     decoration: const InputDecoration(
+                  //         labelText: "Location",
+                  //         fillColor: Colors.white,
+                  //         focusedBorder: OutlineInputBorder(
+                  //           borderSide:
+                  //               BorderSide(color: Colors.blue, width: 2.0),
+                  //         )),
+                  //     onChanged: (String location) {
+                  //       getLocation(location);
+                  //     },
+                  //   ),
+                  // ),
+                  // Padding(
+                  //   padding: const EdgeInsets.all(8),
+                  //   child: DropdownButtonFormField<String>(
+                  //     decoration: const InputDecoration(
+                  //       labelText: "Detection Status",
+                  //       fillColor: Colors.white,
+                  //       focusedBorder: OutlineInputBorder(
+                  //         borderSide:
+                  //             BorderSide(color: Colors.blue, width: 2.0),
+                  //       ),
+                  //     ),
+                  //     items: const [
+                  //       DropdownMenuItem(
+                  //           value: "No Googles", child: Text("No Googles")),
+                  //       DropdownMenuItem(
+                  //           value: "No Coat", child: Text("No Coat")),
+                  //       DropdownMenuItem(
+                  //           value: "No Helmet", child: Text("No Helmet")),
+                  //       DropdownMenuItem(
+                  //           value: "No Boots", child: Text("No Boots")),
+                  //     ],
+                  //     onChanged: (String? status) {
+                  //       setState(() {
+                  //         getDetectionStatus(status!);
+                  //       });
+                  //     },
+                  //   ),
+                  // ),
 
-                  // // Create Data Insert Image
+                  // // // Create Data Insert Image
 
                   // Padding(
                   //   padding: const EdgeInsets.all(8),
@@ -747,9 +748,9 @@ class _MyHomePageState extends State<MyHomePage> {
                           String safetyReport =
                               data['Safety Report']?.toString().toLowerCase() ??
                                   '';
-                          String timestamp = (data['Time stamp'] is Timestamp)
+                          String timestamp = (data['Timestamp'] is Timestamp)
                               ? DateFormat('MMMM d, yyyy \'at\' h:mm:ss a')
-                                  .format(data['Time stamp'].toDate())
+                                  .format(data['Timestamp'].toDate())
                                   .toLowerCase()
                               : '';
                           String docId = doc.id.toLowerCase();
@@ -766,7 +767,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                         return Column(
                           children: [
-                            Text('Total Reports: ${docs.length}',
+                            SelectableText('Total Reports: ${docs.length}',
                                 style: const TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold)),
                             const SizedBox(
@@ -811,6 +812,40 @@ class _MyHomePageState extends State<MyHomePage> {
                                   : const Icon(Icons.sort),
                               onPressed: _toggleSortOrder,
                             ),
+                            PopupMenuButton<String>(
+                              color: Colors.white,
+                              onSelected: _handleMenuSelection,
+                              itemBuilder: (BuildContext context) {
+                                return [
+                                  const PopupMenuItem<String>(
+                                    value: 'today',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.today_rounded,
+                                          color: Colors.black,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text('Show Today\'s Data'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem<String>(
+                                    value: 'all',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.all_inbox_rounded,
+                                          color: Colors.black,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text('Show All Data'),
+                                      ],
+                                    ),
+                                  ),
+                                ];
+                              },
+                            ),
                           ],
                         ),
                       ],
@@ -835,9 +870,9 @@ class _MyHomePageState extends State<MyHomePage> {
                           String safetyReport =
                               data['Safety Report']?.toString().toLowerCase() ??
                                   '';
-                          String timestamp = (data['Time stamp'] is Timestamp)
+                          String timestamp = (data['Timestamp'] is Timestamp)
                               ? DateFormat('MMMM d, yyyy \'at\' h:mm:ss a')
-                                  .format(data['Time stamp'].toDate())
+                                  .format(data['Timestamp'].toDate())
                                   .toLowerCase()
                               : '';
                           String docId = doc.id.toLowerCase();
@@ -903,6 +938,10 @@ class _MyHomePageState extends State<MyHomePage> {
                         );
                       }
                     },
+                  ),
+
+                  const SizedBox(
+                    height: 48,
                   ),
                 ],
               ),

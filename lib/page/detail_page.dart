@@ -5,16 +5,17 @@ import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import 'package:safetyreport/widget/map_widget.dart';
 import 'dart:io';
-import 'package:share_plus/share_plus.dart'; 
-import 'package:universal_html/html.dart' as html; // 
+import 'package:share_plus/share_plus.dart';
+import 'package:universal_html/html.dart' as html; //
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/services.dart'; // Import for Clipboard
 
 class DetailPage extends StatelessWidget {
   final DocumentSnapshot documentSnapshot;
-  
 
   const DetailPage({super.key, required this.documentSnapshot});
 
@@ -22,7 +23,7 @@ class DetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
 
-    dynamic timestamp = data['Time stamp'];
+    dynamic timestamp = data['Timestamp'];
     String formattedDate;
 
     if (timestamp is Timestamp) {
@@ -40,15 +41,15 @@ class DetailPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: InkWell(
-          onTap: (){
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => const MyHomePage()),
-        // );
+          onTap: () {
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(builder: (context) => const MyHomePage()),
+            // );
 
-        Navigator.pushReplacementNamed(context, '/home');
+            Navigator.pushReplacementNamed(context, '/home');
           },
-          child: const Text('Detail Page'),
+          child: const Text('Safety Report'),
         ),
         actions: [
           IconButton(
@@ -81,70 +82,92 @@ class DetailPage extends StatelessWidget {
               _showDeleteConfirmationDialog(context);
             },
           ),
-
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: data['Image'] != null
-                    ? Image.network(
-                        data['Image'],
-                        height: 300,
-                        width: 300,
-                        fit: BoxFit.cover,
-                      )
-                    : const SizedBox(
-                        height: 300,
-                        width: 300,
-                        child: Icon(Icons.image_not_supported, size: 300),
+      body: GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: data['Image'] != null
+                      ? Image.network(
+                          data['Image'],
+                          height: 300,
+                          width: 300,
+                          fit: BoxFit.cover,
+                        )
+                      : const SizedBox(
+                          height: 300,
+                          width: 300,
+                          child: Icon(Icons.image_not_supported, size: 300),
+                        ),
+                ),
+                const SizedBox(height: 16),
+                SelectableText(
+                  'Location: ${data['Location'] ?? 'No Location'}',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                SelectableText(
+                  'Date: $formattedDate',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                SelectableText.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(
+                        text: 'Safety Report: ',
+                        style: TextStyle(
+                          fontSize: 16,
+                        ),
                       ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Location: ${data['Location'] ?? 'No Location'}',
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Date: $formattedDate',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Text.rich(
-                TextSpan(
+                      TextSpan(
+                        text: '${data['Safety Report'] ?? 'No Status'}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: getStatusColor(
+                              data['Safety Report'] ?? ''), // Custom color
+                          fontWeight: FontWeight.w500, // Bold
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SelectableText(
+                  'ID: ${documentSnapshot.id}', // Display document ID
+                  style: const TextStyle(fontSize: 12),
+                  maxLines: 1,
+                ),
+                const SizedBox(height: 32),
+
+                //Latitude Longtitude
+
+                Column(
                   children: [
-                    const TextSpan(
-                      text: 'Safety Report: ',
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
+                    SelectableText(
+                      'Lat: ${data['Latitude'] ?? 'No Data'}, Long: ${data['Longitude'] ?? 'No Data'}',
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w500),
                     ),
-                    TextSpan(
-                      text: '${data['Safety Report'] ?? 'No Status'}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: getStatusColor(
-                            data['Safety Report'] ?? ''), // Custom color
-                        fontWeight: FontWeight.w500, // Bold
-                      ),
+                    Container(
+                      margin: const EdgeInsets.only(top: 8, bottom: 16),
+                      height: 300,
+                      width: MediaQuery.of(context).size.width,
+                      child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: MapWidget(data['Latitude'], data['Longitude'])),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              AutoSizeText(
-                'ID: ${documentSnapshot.id}', // Display document ID
-                style: const TextStyle(fontSize: 12),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -212,13 +235,13 @@ class DetailPage extends StatelessWidget {
 //       if (status.isGranted) {
 //         // Mobile-specific code to download image
 //         Directory? appDocDir;
-        
+
 //         if (Platform.isAndroid && await Permission.manageExternalStorage.isGranted) {
 //           appDocDir = Directory('/storage/emulated/0/Download');
 //         } else {
 //           appDocDir = await getApplicationDocumentsDirectory();
 //         }
-        
+
 //         String appDocPath = appDocDir!.path;
 
 //         // Create the file path to save the image
@@ -248,66 +271,69 @@ class DetailPage extends StatelessWidget {
 //   }
 // }
 
-Future<void> _downloadImage(String url, BuildContext context) async {
-  try {
-    if (kIsWeb) {
-      // Kode khusus untuk mengunduh gambar di web
-      var imgReq = html.HttpRequest();
-      imgReq.open('GET', url);
-      imgReq.responseType = 'blob';
-      imgReq.onLoadEnd.listen((e) {
-        final blob = imgReq.response;
-        final downloadUrl = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: downloadUrl)
-          ..setAttribute("download", "image.png")
-          ..click();
-        html.Url.revokeObjectUrl(downloadUrl);
-      });
-      imgReq.send();
-    } else {
-      // Meminta izin penyimpanan untuk Android
-      var status = await Permission.storage.request();
-      if (status.isGranted) {
-        // Kode khusus untuk mengunduh gambar di mobile
-        Directory? appDocDir;
-
-        // Memeriksa izin manageExternalStorage untuk Android
-        if (Platform.isAndroid && await Permission.manageExternalStorage.isGranted) {
-          appDocDir = Directory('/storage/emulated/0/Download');
-        } else if (Platform.isAndroid) {
-          appDocDir = await getExternalStorageDirectory();
-        } else {
-          appDocDir = await getApplicationDocumentsDirectory();
-        }
-
-        String appDocPath = appDocDir!.path;
-
-        // Membuat path file untuk menyimpan gambar
-        String fileName = url.split('/').last;
-        String filePath = '$appDocPath/$fileName';
-
-        // Mengunduh gambar
-        Dio dio = Dio();
-        await dio.download(url, filePath);
-
-        // Menampilkan pesan sukses
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Image downloaded successfully at $filePath")),
-        );
+  Future<void> _downloadImage(String url, BuildContext context) async {
+    try {
+      if (kIsWeb) {
+        // Kode khusus untuk mengunduh gambar di web
+        var imgReq = html.HttpRequest();
+        imgReq.open('GET', url);
+        imgReq.responseType = 'blob';
+        imgReq.onLoadEnd.listen((e) {
+          final blob = imgReq.response;
+          final downloadUrl = html.Url.createObjectUrlFromBlob(blob);
+          final anchor = html.AnchorElement(href: downloadUrl)
+            ..setAttribute("download", "image.png")
+            ..click();
+          html.Url.revokeObjectUrl(downloadUrl);
+        });
+        imgReq.send();
       } else {
-        // Menampilkan pesan error jika izin ditolak
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Storage permission denied")),
-        );
+        // Meminta izin penyimpanan untuk Android
+        var status = await Permission.storage.request();
+        if (status.isGranted) {
+          // Kode khusus untuk mengunduh gambar di mobile
+          Directory? appDocDir;
+
+          // Memeriksa izin manageExternalStorage untuk Android
+          if (Platform.isAndroid &&
+              await Permission.manageExternalStorage.isGranted) {
+            appDocDir = Directory('/storage/emulated/0/Download');
+          } else if (Platform.isAndroid) {
+            appDocDir = await getExternalStorageDirectory();
+          } else {
+            appDocDir = await getApplicationDocumentsDirectory();
+          }
+
+          String appDocPath = appDocDir!.path;
+
+          // Membuat path file untuk menyimpan gambar
+          String fileName = url.split('/').last;
+          String filePath = '$appDocPath/$fileName';
+
+          // Mengunduh gambar
+          Dio dio = Dio();
+          await dio.download(url, filePath);
+
+          // Menampilkan pesan sukses
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text("Image downloaded successfully at $filePath")),
+          );
+        } else {
+          // Menampilkan pesan error jika izin ditolak
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Storage permission denied")),
+          );
+        }
       }
+    } catch (error) {
+      // Menampilkan pesan error yang lebih deskriptif
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text("Failed to download image: ${error.toString()}")),
+      );
     }
-  } catch (error) {
-    // Menampilkan pesan error yang lebih deskriptif
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Failed to download image: ${error.toString()}")),
-    );
   }
-}
 
   void _shareContent(BuildContext context, Map<String, dynamic> data) {
     String shareText = '''
@@ -332,7 +358,9 @@ Future<void> _downloadImage(String url, BuildContext context) async {
 
   void _copyLinkToClipboard(BuildContext context) {
     Clipboard.setData(
-      ClipboardData(text: 'safetyreportproject.web.app/${documentSnapshot.reference.path}'),
+      ClipboardData(
+          text:
+              'safetyreportproject.web.app/${documentSnapshot.reference.path}'),
     ).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Link copied to clipboard")),
@@ -343,9 +371,6 @@ Future<void> _downloadImage(String url, BuildContext context) async {
       );
     });
   }
-
-
-  
 
   Color getStatusColor(String status) {
     switch (status) {

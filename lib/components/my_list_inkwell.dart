@@ -35,7 +35,7 @@ class MyListInkWell extends StatelessWidget {
   Widget build(BuildContext context) {
     Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
 
-    dynamic timestamp = data['Time stamp'];
+    dynamic timestamp = data['Timestamp'];
     String formattedDate;
 
     if (timestamp is Timestamp) {
