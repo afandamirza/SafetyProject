@@ -156,13 +156,42 @@ class DetailPage extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 12, fontWeight: FontWeight.w500),
                     ),
+                    // Container(
+                    //   margin: const EdgeInsets.only(top: 8, bottom: 16),
+                    //   height: 300,
+                    //   width: MediaQuery.of(context).size.width,
+                    //   child: ClipRRect(
+                    //       borderRadius: BorderRadius.circular(8.0),
+                    //       child: MapWidget(data['Latitude'], data['Longitude'])),
+                    // ),
+
                     Container(
                       margin: const EdgeInsets.only(top: 8, bottom: 16),
                       height: 300,
                       width: MediaQuery.of(context).size.width,
                       child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: MapWidget(data['Latitude'], data['Longitude'])),
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: (data['Latitude'] != null &&
+                                data['Longitude'] != null)
+                            ? MapWidget(data['Latitude'], data['Longitude'])
+                            : const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.error_outline,
+                                        color: Colors.red, size: 40),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Location Not Found',
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.red),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                      ),
                     ),
                   ],
                 ),
